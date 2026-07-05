@@ -1,0 +1,1524 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Felina-Cipher v4.1 – Katzenbasierte Verschlüsselung mit Multi-Layer, QR-Codes und Challenge-Modus">
+    <title>🐾 Felina-Cipher v4.1</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --container-bg: #ffffff;
+            --text: #1a1a2e;
+            --subtle: #666;
+            --border: #ddd;
+            --accent: #6d4aff;
+            --accent-light: #8b6fff;
+            --accent-bg: #f8f5ff;
+            --accent-border: rgba(109,74,255,0.3);
+            --red: #ff6b6b;
+            --green: #43e97b;
+            --gold: #f9a825;
+            --blue: #42a5f5;
+            --pink: #ec407a;
+            --cyan: #26c6da;
+            --hover-row: #efe7ff;
+            --even-row: #f9f9f9;
+            --shadow: rgba(0,0,0,0.3);
+        }
+
+        [data-theme="dark"] {
+            --bg: linear-gradient(135deg, #0f0c29 0%, #1a1a2e 50%, #16213e 100%);
+            --container-bg: #1a1a2e;
+            --text: #e0e0e0;
+            --subtle: #999;
+            --border: #3a3a5c;
+            --accent: #8b6fff;
+            --accent-light: #a78bff;
+            --accent-bg: #252540;
+            --accent-border: rgba(139,111,255,0.3);
+            --red: #ff6b6b;
+            --green: #43e97b;
+            --gold: #f9a825;
+            --blue: #42a5f5;
+            --pink: #ec407a;
+            --cyan: #26c6da;
+            --hover-row: #2e2e4a;
+            --even-row: #222240;
+            --shadow: rgba(0,0,0,0.6);
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+            color: var(--text);
+            transition: background 0.5s;
+        }
+
+        .container {
+            background: var(--container-bg);
+            border-radius: 24px;
+            padding: 35px;
+            max-width: 1000px;
+            width: 100%;
+            box-shadow: 0 20px 60px var(--shadow);
+            margin-bottom: 40px;
+            transition: background 0.4s, color 0.4s;
+        }
+
+        /* ========== HEADER ========== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .title-area { text-align: center; flex: 1; }
+        h1 { color: var(--accent); font-size: 26px; }
+        .subtitle { color: var(--subtle); font-size: 13px; margin-top: 4px; }
+        .version-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            color: white; padding: 3px 12px;
+            border-radius: 12px; font-size: 11px; font-weight: bold;
+        }
+        .header-actions { display: flex; gap: 8px; align-items: center; }
+
+        .icon-btn {
+            background: var(--accent-bg);
+            border: 2px solid var(--accent);
+            border-radius: 50%;
+            width: 42px; height: 42px;
+            cursor: pointer; font-size: 18px;
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.4s;
+            color: var(--text);
+        }
+        .icon-btn:hover { transform: rotate(360deg) scale(1.1); }
+
+        .lang-toggle {
+            background: var(--accent-bg);
+            border: 2px solid var(--accent);
+            border-radius: 20px;
+            padding: 6px 14px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            color: var(--text);
+            transition: all 0.3s;
+        }
+        .lang-toggle:hover { background: var(--accent); color: white; }
+
+        /* ========== ANIMATED CAT ========== */
+        .cat-mascot { display: flex; justify-content: center; margin: 15px 0; }
+        .cat-svg { width: 90px; height: 80px; }
+        .cat-eye { animation: blink 4s infinite; transform-origin: center; }
+        .cat-eye:nth-child(2) { animation-delay: 0.1s; }
+        @keyframes blink {
+            0%, 88%, 100% { transform: scaleY(1); }
+            92% { transform: scaleY(0.1); }
+        }
+        .cat-tail { animation: tailWag 2s ease-in-out infinite; transform-origin: bottom; }
+        @keyframes tailWag {
+            0%, 100% { transform: rotate(-5deg); }
+            50% { transform: rotate(15deg); }
+        }
+        .cat-whisker-l { animation: whiskerTwitch 5s infinite; }
+        .cat-whisker-r { animation: whiskerTwitch 5s 0.3s infinite; }
+        @keyframes whiskerTwitch {
+            0%, 90%, 100% { transform: translateX(0); }
+            93% { transform: translateX(-1px); }
+            96% { transform: translateX(1px); }
+        }
+
+        /* ========== TABS ========== */
+        .tabs {
+            display: flex; gap: 4px; margin: 20px 0 16px;
+            border-bottom: 2px solid var(--border); flex-wrap: wrap;
+        }
+        .tab {
+            padding: 10px 18px; cursor: pointer;
+            border: none; background: transparent;
+            color: var(--subtle); font-size: 14px; font-weight: bold;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s; border-radius: 8px 8px 0 0;
+            font-family: inherit;
+        }
+        .tab:hover { color: var(--accent); background: var(--accent-bg); }
+        .tab.active {
+            color: var(--accent); border-bottom-color: var(--accent);
+            background: var(--accent-bg);
+        }
+        .tab-content { display: none; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: block; }
+
+        /* ========== INPUTS ========== */
+        .label {
+            font-weight: bold; color: var(--accent);
+            margin: 16px 0 6px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .char-counter { font-size: 12px; color: var(--subtle); font-weight: normal; }
+
+        textarea {
+            width: 100%; height: 110px;
+            padding: 14px; border: 2px solid var(--border);
+            border-radius: 10px; font-size: 15px; resize: vertical;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            background: var(--container-bg); color: var(--text); font-family: inherit;
+        }
+        textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-border); }
+        textarea.drag-over { border-color: var(--green); background: rgba(67,233,123,0.05); }
+
+        .key-row {
+            display: flex; gap: 10px; align-items: flex-start; margin: 10px 0; flex-wrap: wrap;
+        }
+        .key-row input[type="text"], .key-row input[type="password"] {
+            flex: 1; min-width: 150px;
+            padding: 10px 14px; border: 2px solid var(--border);
+            border-radius: 8px; font-size: 14px;
+            background: var(--container-bg); color: var(--text); font-family: inherit;
+        }
+        .key-row input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(249,168,37,0.15); }
+
+        .strength-meter {
+            width: 100%; height: 6px; border-radius: 3px;
+            background: var(--border); margin-top: 6px; overflow: hidden;
+        }
+        .strength-fill {
+            height: 100%; width: 0%; border-radius: 3px;
+            transition: width 0.4s, background 0.4s;
+        }
+
+        select, .sep-select {
+            padding: 10px; border: 2px solid var(--border);
+            border-radius: 8px; font-size: 14px;
+            background: var(--container-bg); color: var(--text); font-family: inherit;
+        }
+        select:focus { outline: none; border-color: var(--accent); }
+
+        .options-row { display: flex; gap: 16px; margin: 12px 0; flex-wrap: wrap; align-items: center; }
+        .checkbox-group { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+        .checkbox-group input { accent-color: var(--accent); cursor: pointer; }
+
+        .layer-selector {
+            display: flex; align-items: center; gap: 6px; font-size: 13px;
+        }
+        .layer-selector input {
+            width: 50px; padding: 6px; text-align: center;
+            border: 2px solid var(--border); border-radius: 6px;
+            background: var(--container-bg); color: var(--text); font-size: 14px;
+        }
+        .layer-selector input:focus { outline: none; border-color: var(--cyan); }
+
+        /* ========== BUTTONS ========== */
+        .buttons { display: flex; gap: 8px; margin: 14px 0; flex-wrap: wrap; }
+        button {
+            flex: 1; min-width: 110px;
+            padding: 13px 18px; font-size: 14px;
+            border: none; border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+            font-weight: bold; font-family: inherit;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px var(--accent-border); }
+        button:active { transform: translateY(0); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .btn-encrypt { background: linear-gradient(135deg, #6d4aff, #8b6fff); color: white; }
+        .btn-decrypt { background: linear-gradient(135deg, #ff6b6b, #ee5a5a); color: white; }
+        .btn-clear { background: var(--border); color: var(--text); }
+        .btn-copy { background: linear-gradient(135deg, #43e97b, #38f9d7); color: #1a1a2e; }
+        .btn-swap { background: linear-gradient(135deg, #f9a825, #f57f17); color: white; }
+        .btn-download { background: linear-gradient(135deg, #42a5f5, #1976d2); color: white; }
+        .btn-share { background: linear-gradient(135deg, #ec407a, #c2185b); color: white; }
+        .btn-qr { background: linear-gradient(135deg, #26c6da, #00838f); color: white; }
+        .btn-challenge { background: linear-gradient(135deg, #ab47bc, #6a1b9a); color: white; }
+
+        /* ========== RESULT ========== */
+        .progress-bar {
+            height: 3px; border-radius: 3px;
+            background: var(--border); overflow: hidden;
+            margin: 8px 0; opacity: 0; transition: opacity 0.3s;
+        }
+        .progress-bar.active { opacity: 1; }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--accent-light));
+            width: 0%; transition: width 0.3s;
+        }
+
+        .result-box {
+            background: var(--accent-bg);
+            border-left: 4px solid var(--accent);
+            padding: 16px; border-radius: 8px;
+            word-break: break-word; min-height: 65px;
+            font-size: 14px; line-height: 1.9;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .stats-bar { display: flex; gap: 10px; margin-top: 10px; font-size: 11px; color: var(--subtle); flex-wrap: wrap; }
+        .stat-item { background: var(--accent-bg); padding: 4px 10px; border-radius: 8px; border: 1px solid var(--border); }
+
+        .layer-indicator {
+            display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap;
+        }
+        .layer-dot {
+            width: 24px; height: 24px; border-radius: 50%;
+            background: var(--accent-bg); border: 2px solid var(--accent);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; font-weight: bold; color: var(--accent);
+            transition: all 0.3s;
+        }
+        .layer-dot.active { background: var(--accent); color: white; transform: scale(1.15); }
+
+        /* ========== FREQUENCY CHART ========== */
+        .freq-chart { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 6px; }
+        .freq-bar-wrapper { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 50px; }
+        .freq-bar {
+            width: 30px;
+            background: linear-gradient(180deg, var(--accent), var(--accent-light));
+            border-radius: 4px 4px 0 0;
+            transition: height 0.5s ease; min-height: 2px;
+        }
+        .freq-label { font-size: 9px; color: var(--subtle); text-align: center; max-width: 50px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        /* ========== QR MODAL ========== */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.7);
+            display: none; align-items: center; justify-content: center;
+            z-index: 1000; padding: 20px;
+            backdrop-filter: blur(4px);
+        }
+        .modal-overlay.active { display: flex; animation: fadeIn 0.2s ease; }
+        .modal-content {
+            background: var(--container-bg);
+            border-radius: 20px; padding: 30px;
+            max-width: 400px; width: 100%; text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            animation: modalIn 0.3s ease;
+        }
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        .modal-content h2 { color: var(--accent); margin-bottom: 16px; }
+        .modal-content img { max-width: 250px; border-radius: 12px; margin: 16px auto; display: block; }
+        .modal-content .modal-buttons { display: flex; gap: 10px; margin-top: 16px; }
+        .modal-content button { min-width: auto; }
+
+        /* ========== HISTORY ========== */
+        .history-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+        .history-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 14px; background: var(--accent-bg);
+            border: 1px solid var(--border); border-radius: 10px;
+            cursor: pointer; transition: border-color 0.3s, transform 0.2s;
+        }
+        .history-item:hover { border-color: var(--accent); transform: translateX(4px); }
+        .history-text { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 70%; }
+        .history-meta { font-size: 11px; color: var(--subtle); display: flex; gap: 10px; align-items: center; }
+        .history-delete { background: none; border: none; color: var(--red); cursor: pointer; font-size: 18px; padding: 2px 6px; min-width: auto; }
+        .history-delete:hover { transform: scale(1.3); box-shadow: none; }
+        .history-empty { text-align: center; color: var(--subtle); padding: 30px; font-size: 14px; }
+
+        /* ========== CUSTOM CODES ========== */
+        .custom-code-row {
+            display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap;
+        }
+        .custom-code-row input {
+            padding: 8px 12px; border: 2px solid var(--border);
+            border-radius: 8px; font-size: 14px;
+            background: var(--container-bg); color: var(--text); font-family: inherit;
+        }
+        .custom-code-row input:first-child { width: 60px; text-align: center; }
+        .custom-code-row input:nth-child(2) { flex: 1; min-width: 150px; }
+        .custom-code-row button { min-width: auto; max-width: 40px; padding: 8px; font-size: 16px; }
+        .custom-list { margin-top: 16px; }
+        .custom-item {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: var(--accent-bg); border: 1px solid var(--accent);
+            border-radius: 20px; padding: 4px 12px; margin: 4px; font-size: 13px;
+        }
+        .custom-item button { min-width: auto; max-width: auto; background: none; border: none; color: var(--red); cursor: pointer; font-size: 16px; padding: 0; }
+
+        /* ========== CHALLENGE ========== */
+        .challenge-box {
+            background: linear-gradient(135deg, var(--accent-bg), rgba(171,71,188,0.1));
+            border: 2px dashed var(--accent);
+            border-radius: 12px; padding: 24px; margin: 16px 0; text-align: center;
+        }
+        .challenge-code {
+            font-family: monospace; font-size: 14px;
+            background: var(--container-bg); border-radius: 8px;
+            padding: 16px; margin: 12px 0; word-break: break-word;
+            border: 1px solid var(--border);
+        }
+        .challenge-feedback { margin-top: 10px; font-weight: bold; font-size: 14px; }
+
+        /* ========== TABLES ========== */
+        .table-search {
+            width: 100%; padding: 10px 14px;
+            border: 2px solid var(--border); border-radius: 8px;
+            font-size: 14px; margin-bottom: 12px;
+            background: var(--container-bg); color: var(--text); font-family: inherit;
+        }
+        .table-search:focus { outline: none; border-color: var(--accent); }
+        .tables-container { display: flex; gap: 20px; flex-wrap: wrap; }
+        .table-wrapper { flex: 1; min-width: 250px; }
+        .table-wrapper h3 { color: var(--accent); font-size: 15px; margin-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { padding: 8px 10px; border: 1px solid var(--border); text-align: left; }
+        th { background: var(--accent); color: white; position: sticky; top: 0; }
+        tr:nth-child(even) { background: var(--even-row); }
+        tr:hover { background: var(--hover-row); }
+        td code { background: var(--accent-bg); padding: 2px 6px; border-radius: 4px; font-size: 11px; color: var(--accent); }
+        .section-divider { background: var(--accent); color: white; font-weight: bold; text-align: center; }
+
+        /* ========== ABOUT ========== */
+        .about-card { background: var(--accent-bg); border-radius: 12px; padding: 20px; margin-top: 12px; line-height: 1.8; }
+        .about-card h3 { color: var(--accent); margin-bottom: 10px; }
+        .about-card ul { margin-left: 20px; }
+        .about-card li { margin-bottom: 6px; }
+        .about-card code { background: var(--container-bg); padding: 2px 6px; border-radius: 4px; font-size: 12px; color: var(--accent); }
+        kbd { background: var(--accent-bg); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; font-size: 12px; font-family: monospace; }
+
+        footer { text-align: center; margin-top: 30px; color: var(--subtle); font-size: 12px; }
+        .error-text { color: var(--red); }
+        .success-text { color: var(--green); font-weight: bold; }
+        .warning-text { color: var(--gold); font-weight: bold; }
+
+        @media (max-width: 600px) {
+            .container { padding: 20px; }
+            h1 { font-size: 20px; }
+            button { min-width: 100%; }
+            .buttons { flex-direction: column; }
+            .table-wrapper { min-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <div class="header">
+            <div class="title-area">
+                <h1>Felina-Cipher <span class="version-badge">v4.1</span></h1>
+                <p class="subtitle" data-i18n="subtitle">Katzen-basierte Verschlüsselung · QR · Multi-Layer · Custom Codes · Challenge</p>
+            </div>
+            <div class="header-actions">
+                <button class="lang-toggle" onclick="toggleLang()" id="langBtn" aria-label="Sprache wechseln">🇬🇧 EN</button>
+                <button class="icon-btn" onclick="toggleTheme()" title="Dark Mode" id="themeBtn" aria-label="Dark Mode umschalten">🌙</button>
+            </div>
+        </div>
+
+        <!-- ANIMATED CAT -->
+        <div class="cat-mascot">
+            <svg class="cat-svg" viewBox="0 0 100 90" role="img" aria-label="Felina-Cipher Maskottchen">
+                <ellipse cx="50" cy="55" rx="28" ry="22" fill="#6d4aff"/>
+                <polygon points="28,35 22,18 38,28" fill="#6d4aff"/>
+                <polygon points="72,35 78,18 62,28" fill="#6d4aff"/>
+                <circle cx="40" cy="50" r="4" fill="white" class="cat-eye"/>
+                <circle cx="60" cy="50" r="4" fill="white" class="cat-eye"/>
+                <circle cx="40" cy="50" r="1.5" fill="#1a1a2e"/>
+                <circle cx="60" cy="50" r="1.5" fill="#1a1a2e"/>
+                <path d="M 48 58 Q 50 61 52 58" stroke="#1a1a2e" stroke-width="1.5" fill="none"/>
+                <line x1="32" y1="46" x2="20" y2="44" stroke="#6d4aff" stroke-width="1" class="cat-whisker-l"/>
+                <line x1="32" y1="50" x2="20" y2="51" stroke="#6d4aff" stroke-width="1" class="cat-whisker-l"/>
+                <line x1="68" y1="46" x2="80" y2="44" stroke="#6d4aff" stroke-width="1" class="cat-whisker-r"/>
+                <line x1="68" y1="50" x2="80" y2="51" stroke="#6d4aff" stroke-width="1" class="cat-whisker-r"/>
+                <path class="cat-tail" d="M 76 65 Q 90 60 88 48" stroke="#6d4aff" stroke-width="5" fill="none" stroke-linecap="round"/>
+                <circle cx="50" cy="66" r="2.5" fill="#f9a825"/>
+            </svg>
+        </div>
+
+        <!-- TABS -->
+        <div class="tabs" role="tablist">
+            <button class="tab active" onclick="switchTab(event,'main')" data-i18n="tab_cipher" role="tab">🔐 Verschlüsseln</button>
+            <button class="tab" onclick="switchTab(event,'custom')" data-i18n="tab_custom" role="tab">🎨 Custom Codes</button>
+            <button class="tab" onclick="switchTab(event,'challenge')" data-i18n="tab_challenge" role="tab">🎮 Challenge</button>
+            <button class="tab" onclick="switchTab(event,'codex')" data-i18n="tab_codex" role="tab">📚 Codex</button>
+            <button class="tab" onclick="switchTab(event,'history')" data-i18n="tab_history" role="tab">📜 Verlauf</button>
+            <button class="tab" onclick="switchTab(event,'about')" data-i18n="tab_about" role="tab">ℹ️ Info</button>
+        </div>
+
+        <!-- ========== TAB: MAIN ========== -->
+        <div class="tab-content active" id="tab-main" role="tabpanel">
+            <div class="label">
+                <span data-i18n="input_label">🔤 Eingabetext:</span>
+                <span class="char-counter" id="charCounter">0 Zeichen</span>
+            </div>
+            <textarea id="inputText" placeholder="Gib hier deinen Text ein... z.B. Henry hat 3 süße Katzen!" oninput="onInputChange()"></textarea>
+
+            <div class="key-row">
+                <span style="font-size:14px;">🔑</span>
+                <input type="password" id="secretKey" placeholder="Geheimschlüssel (optional)" oninput="updateStrength(); handleLivePreview();">
+                <select id="separatorSelect" class="sep-select" onchange="handleLivePreview()">
+                    <option value=" • ">• Standard</option>
+                    <option value=" ">␣ Leerz.</option>
+                    <option value=" 🐾 ">🐾 Pfote</option>
+                    <option value=" | ">| Strich</option>
+                    <option value=" / ">/ Slash</option>
+                    <option value=" :: ">:: Doppelp.</option>
+                    <option value=" 🐱 ">🐱 Katze</option>
+                    <option value=" ⭐ ">⭐ Stern</option>
+                </select>
+            </div>
+            <div class="strength-meter"><div class="strength-fill" id="strengthFill"></div></div>
+
+            <div class="options-row">
+                <label class="checkbox-group">
+                    <input type="checkbox" id="livePreview" checked onchange="handleLivePreview()">
+                    ⚡ <span data-i18n="live_preview">Live-Vorschau</span>
+                </label>
+                <label class="checkbox-group">
+                    <input type="checkbox" id="preserveCase" checked onchange="handleLivePreview()">
+                    🔠 <span data-i18n="case_preserve">Groß-/Kleinschreibung</span>
+                </label>
+                <label class="checkbox-group">
+                    <input type="checkbox" id="emojiMode" onchange="handleLivePreview()">
+                    🐱 <span data-i18n="emoji_mode">Emoji-Modus</span>
+                </label>
+                <label class="checkbox-group">
+                    <input type="checkbox" id="soundEnabled" onchange="toggleSound()">
+                    🔊 <span data-i18n="sounds">Geräusche</span>
+                </label>
+                <div class="layer-selector">
+                    <span>🔄</span>
+                    <input type="number" id="layerCount" min="1" max="5" value="1" onchange="handleLivePreview()">
+                    <span data-i18n="layers">Layer</span>
+                </div>
+            </div>
+
+            <div class="buttons">
+                <button class="btn-encrypt" onclick="encrypt()" data-i18n="encrypt">🔒 Verschlüsseln</button>
+                <button class="btn-decrypt" onclick="decrypt()" data-i18n="decrypt">🔓 Entschlüsseln</button>
+                <button class="btn-swap" onclick="swapToInput()" data-i18n="swap">🔄 Swap</button>
+                <button class="btn-copy" onclick="copyResult()" data-i18n="copy">📋 Kopieren</button>
+                <button class="btn-qr" onclick="showQR()" data-i18n="qr">📱 QR-Code</button>
+                <button class="btn-download" onclick="downloadResult()" data-i18n="download">💾 Download</button>
+                <button class="btn-share" onclick="shareURL()" data-i18n="share">🔗 Teilen</button>
+                <button class="btn-clear" onclick="clearAll()" data-i18n="clear">🗑️ Löschen</button>
+            </div>
+
+            <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
+            <div class="layer-indicator" id="layerIndicator"></div>
+
+            <div class="label"><span data-i18n="result">📝 Ergebnis:</span></div>
+            <div class="result-box" id="outputBox" data-i18n-placeholder="result_placeholder">Das Ergebnis erscheint hier...</div>
+            <div class="stats-bar" id="statsBar"></div>
+            <div class="freq-chart" id="freqChart"></div>
+        </div>
+
+        <!-- ========== TAB: CUSTOM CODES ========== -->
+        <div class="tab-content" id="tab-custom" role="tabpanel">
+            <h3 style="color:var(--accent);" data-i18n="custom_title">🎨 Eigene Katzen-Codes definieren</h3>
+            <p style="color:var(--subtle);font-size:13px;margin:8px 0;" data-i18n="custom_desc">
+                Überschreibe bestehende Codes oder füge neue hinzu. Diese werden beim Verschlüsseln verwendet.
+            </p>
+            <div class="custom-code-row">
+                <input type="text" id="customChar" placeholder="A" maxlength="2">
+                <input type="text" id="customCode" placeholder="meow-mix">
+                <button class="btn-encrypt" onclick="addCustomCode()" style="min-width:auto;padding:8px 16px;">➕ Hinzufügen</button>
+            </div>
+            <div class="custom-list" id="customList"></div>
+            <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
+                <button class="btn-download" onclick="exportConfig()" style="min-width:auto;padding:10px 20px;">📤 Export JSON</button>
+                <button class="btn-encrypt" onclick="document.getElementById('importFile').click()" style="min-width:auto;padding:10px 20px;">📥 Import JSON</button>
+                <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importConfig(event)">
+                <button class="btn-clear" onclick="resetCustomCodes()" style="min-width:auto;padding:10px 20px;">🗑️ Zurücksetzen</button>
+            </div>
+        </div>
+
+        <!-- ========== TAB: CHALLENGE ========== -->
+        <div class="tab-content" id="tab-challenge" role="tabpanel">
+            <h3 style="color:var(--accent);" data-i18n="challenge_title">🎮 Challenge-Modus</h3>
+            <p style="color:var(--subtle);font-size:13px;margin:8px 0;" data-i18n="challenge_desc">
+                Ein zufälliger Katzen-Code wird generiert. Kannst du ihn entschlüsseln?
+            </p>
+            <div class="challenge-box">
+                <div class="challenge-code" id="challengeCode">Klicke auf "Neue Challenge" um zu starten! 🐱</div>
+                <input type="text" id="challengeAnswer" placeholder="Deine Antwort..." style="width:100%;padding:12px;border:2px solid var(--border);border-radius:8px;font-size:15px;margin:10px 0;background:var(--container-bg);color:var(--text);font-family:inherit;" onkeydown="if(event.key==='Enter')checkChallenge()">
+                <div class="challenge-feedback" id="challengeFeedback"></div>
+                <div style="display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap;">
+                    <button class="btn-challenge" onclick="newChallenge()" style="min-width:auto;padding:10px 24px;">🎲 Neue Challenge</button>
+                    <button class="btn-decrypt" onclick="revealChallenge()" style="min-width:auto;padding:10px 24px;">👁️ Auflösen</button>
+                    <button class="btn-encrypt" onclick="checkChallenge()" style="min-width:auto;padding:10px 24px;">✅ Prüfen</button>
+                </div>
+                <div style="margin-top:12px;font-size:12px;color:var(--subtle);" data-i18n="challenge_score">Punkte: <span id="challengeScore">0</span> | Gelöst: <span id="challengeSolved">0</span> | Fehlversuche: <span id="challengeFails">0</span></div>
+            </div>
+        </div>
+
+        <!-- ========== TAB: CODEX ========== -->
+        <div class="tab-content" id="tab-codex" role="tabpanel">
+            <input type="text" class="table-search" id="tableSearch" placeholder="🔍 Suche nach Buchstabe oder Katzen-Code..." oninput="filterTable()">
+            <div class="tables-container">
+                <div class="table-wrapper">
+                    <h3 data-i18n="letters_table">📖 Buchstaben &amp; Umlaute</h3>
+                    <table id="letterTable"></table>
+                </div>
+                <div class="table-wrapper">
+                    <h3 data-i18n="numbers_table">🔢 Zahlen &amp; Sonderzeichen</h3>
+                    <table id="numberTable"></table>
+                </div>
+            </div>
+            <p style="margin-top:12px;font-size:13px;color:var(--subtle);">
+                💡 Großbuchstaben → <code>big-</code> Präfix<br>
+                🌍 Intl.: FR · ES · IT · NO · PL · CZ · HU · PT
+            </p>
+        </div>
+
+        <!-- ========== TAB: HISTORY ========== -->
+        <div class="tab-content" id="tab-history" role="tabpanel">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <h3 style="color:var(--accent);" data-i18n="history_title">📜 Letzte Konvertierungen</h3>
+                <button onclick="clearHistory()" style="max-width:160px;min-width:auto;background:var(--red);color:white;padding:8px 16px;font-size:13px;" data-i18n="clear_history">🗑️ Alle löschen</button>
+            </div>
+            <div class="history-list" id="historyList"></div>
+        </div>
+
+        <!-- ========== TAB: ABOUT ========== -->
+        <div class="tab-content" id="tab-about" role="tabpanel">
+            <div class="about-card">
+                <h3>🐱 Felina-Cipher v4.1</h3>
+                <p data-i18n="about_desc">Die ultimative katzenbasierte Verschlüsselungsmethode.</p>
+                <ul style="margin-top:12px;">
+                    <li><strong>26 Buchstaben</strong> (A–Z) + <code>big-</code> für Großschreibung</li>
+                    <li><strong>4 Umlaute</strong> + <strong>11 Intl.</strong> (FR ES IT NO PL CZ HU PT)</li>
+                    <li><strong>10 Zahlen</strong> + <strong>30+ Sonderzeichen</strong></li>
+                    <li><strong>🔑 Secret Key</strong> mit Stärkeanzeige</li>
+                    <li><strong>🔄 Multi-Layer</strong> – 1–5fache Verschlüsselung</li>
+                    <li><strong>🐱 Emoji-Modus</strong> – Ausgabe als Katzen-Emojis</li>
+                    <li><strong>🎨 Custom Codes</strong> – Eigene Zuordnungen</li>
+                    <li><strong>📱 QR-Code</strong> Generierung</li>
+                    <li><strong>🎮 Challenge-Modus</strong> – Zufällige Rätsel</li>
+                    <li><strong>📤 Export/Import</strong> der Konfiguration als JSON</li>
+                    <li><strong>🌍 DE/EN</strong> UI-Sprachumschaltung</li>
+                    <li><strong>📜 Verlauf</strong> – letzte 10 Aktionen (localStorage)</li>
+                    <li><strong>🔊 Web Audio</strong> – Miauen bei Aktionen</li>
+                    <li><strong>⚡ Debounced Live-Vorschau</strong> – performante Eingabeverarbeitung</li>
+                </ul>
+                <h3 style="margin-top:16px;">⌨️ Tastenkürzel</h3>
+                <ul>
+                    <li><kbd>Strg</kbd> + <kbd>Enter</kbd> → Verschlüsseln</li>
+                    <li><kbd>Strg</kbd> + <kbd>Umschalt</kbd> + <kbd>Enter</kbd> → Entschlüsseln</li>
+                    <li><kbd>Strg</kbd> + <kbd>L</kbd> → Eingabe löschen</li>
+                    <li><kbd>Strg</kbd> + <kbd>Q</kbd> → QR-Code anzeigen</li>
+                </ul>
+                <h3 style="margin-top:16px;">📁 Drag &amp; Drop</h3>
+                <p>Ziehe eine <code>.txt</code>-Datei auf das Eingabefeld.</p>
+            </div>
+        </div>
+
+        <footer>Felina-Cipher v4.1 · Erstellt von Lumo 🐱 · Nur zum Spaß, nicht sicherheitskritisch verwenden! ✨</footer>
+    </div>
+
+    <!-- QR MODAL -->
+    <div class="modal-overlay" id="qrModal" onclick="closeQR(event)" role="dialog" aria-label="QR Code Dialog">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h2>📱 QR-Code</h2>
+            <img id="qrImage" alt="QR Code" style="display:none;">
+            <div id="qrLoading">⏳ Generiere QR-Code...</div>
+            <div id="qrText" style="font-size:11px;color:var(--subtle);margin-top:8px;word-break:break-all;max-height:60px;overflow:hidden;"></div>
+            <div class="modal-buttons">
+                <button class="btn-download" onclick="downloadQR()" style="min-width:auto;padding:10px 20px;">💾 Speichern</button>
+                <button class="btn-clear" onclick="closeQR()" style="min-width:auto;padding:10px 20px;">✕ Schließen</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ====================================================================
+        //  FELINA-CIPHER v4.1 — Improved Version
+        // ====================================================================
+
+        // ===== I18N =====
+        const i18n = {
+            de: {
+                subtitle: "Katzen-basierte Verschlüsselung · QR · Multi-Layer · Custom Codes · Challenge",
+                tab_cipher: "🔐 Verschlüsseln", tab_custom: "🎨 Custom Codes", tab_challenge: "🎮 Challenge",
+                tab_codex: "📚 Codex", tab_history: "📜 Verlauf", tab_about: "ℹ️ Info",
+                input_label: "🔤 Eingabetext:", live_preview: "Live-Vorschau", case_preserve: "Groß-/Kleinschreibung",
+                emoji_mode: "Emoji-Modus", sounds: "Geräusche", layers: "Layer",
+                encrypt: "🔒 Verschlüsseln", decrypt: "🔓 Entschlüsseln", swap: "🔄 Swap",
+                copy: "📋 Kopieren", qr: "📱 QR-Code", download: "💾 Download", share: "🔗 Teilen", clear: "🗑️ Löschen",
+                result: "📝 Ergebnis:", result_placeholder: "Das Ergebnis erscheint hier...",
+                custom_title: "🎨 Eigene Katzen-Codes definieren",
+                custom_desc: "Überschreibe bestehende Codes oder füge neue hinzu.",
+                challenge_title: "🎮 Challenge-Modus",
+                challenge_desc: "Ein zufälliger Katzen-Code wird generiert. Kannst du ihn entschlüsseln?",
+                challenge_score: "Punkte",
+                letters_table: "📖 Buchstaben & Umlaute",
+                numbers_table: "🔢 Zahlen & Sonderzeichen",
+                history_title: "📜 Letzte Konvertierungen", clear_history: "🗑️ Alle löschen",
+                about_desc: "Die ultimative katzenbasierte Verschlüsselungsmethode."
+            },
+            en: {
+                subtitle: "Cat-based encryption · QR · Multi-Layer · Custom Codes · Challenge",
+                tab_cipher: "🔐 Encrypt", tab_custom: "🎨 Custom Codes", tab_challenge: "🎮 Challenge",
+                tab_codex: "📚 Codex", tab_history: "📜 History", tab_about: "ℹ️ About",
+                input_label: "🔤 Input text:", live_preview: "Live Preview", case_preserve: "Case sensitivity",
+                emoji_mode: "Emoji Mode", sounds: "Sounds", layers: "Layers",
+                encrypt: "🔒 Encrypt", decrypt: "🔓 Decrypt", swap: "🔄 Swap",
+                copy: "📋 Copy", qr: "📱 QR Code", download: "💾 Download", share: "🔗 Share", clear: "🗑️ Clear",
+                result: "📝 Result:", result_placeholder: "Results will appear here...",
+                custom_title: "🎨 Define your own cat codes",
+                custom_desc: "Override existing codes or add new ones.",
+                challenge_title: "🎮 Challenge Mode",
+                challenge_desc: "A random cat code is generated. Can you decrypt it?",
+                challenge_score: "Score",
+                letters_table: "📖 Letters & Umlauts",
+                numbers_table: "🔢 Numbers & Special chars",
+                history_title: "📜 Recent conversions", clear_history: "🗑️ Clear all",
+                about_desc: "The ultimate cat-based encryption method."
+            }
+        };
+        let currentLang = 'de';
+        function toggleLang() {
+            currentLang = currentLang === 'de' ? 'en' : 'de';
+            document.getElementById('langBtn').textContent = currentLang === 'de' ? '🇬🇧 EN' : '🇩🇪 DE';
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (i18n[currentLang][key]) el.textContent = i18n[currentLang][key];
+            });
+            const ph = document.getElementById('inputText');
+            ph.placeholder = currentLang === 'de' ? 'Gib hier deinen Text ein...' : 'Enter your text here...';
+            const ob = document.getElementById('outputBox');
+            if (ob.textContent.includes('Das Ergebnis erscheint') || ob.textContent.includes('Results will appear')) {
+                ob.textContent = i18n[currentLang].result_placeholder;
+            }
+            saveSettings();
+        }
+
+        // ===== CIPHER MAPS =====
+        const felinaLetters = {
+            'a':'purr','b':'whisker','c':'cat','d':'paw','e':'ear',
+            'f':'fur','g':'growl','h':'hiss','i':'indoor-prowl','j':'jump',
+            'k':'kitty','l':'lick','m':'meow','n':'nap','o':'orange-tabby',
+            'p':'play','q':'quiet','r':'rub','s':'sleep','t':'toy',
+            'u':'under-bed','v':'velvet-paws','w':'wag','x':'xray-box',
+            'y':'yowl','z':'zzz'
+        };
+        const felinaUmlauts = { 'ä':'autumn-shed','ö':'open-mouth-yawn','ü':'overstretch','ß':'sharp-claw' };
+        const felinaIntl = {
+            'é':'french-purr','è':'low-purr','ê':'roof-cat','à':'paw-down',
+            'ç':'curled-tail','ñ':'tilde-nap','ì':'italian-stretch','ò':'surprise-meow',
+            'å':'nordic-fluff','æ':'northern-double','ø':'northern-circle',
+            'ł':'polish-streak','ś':'polish-slink','ż':'polish-spark',
+            'č':'czech-crouch','ř':'czech-roll','ě':'czech-elegant',
+            'ő':'hungarian-prowl','ű':'hungarian-leap',
+            'ã':'portuguese-doze'
+        };
+        const felinaNumbers = {
+            '0':'bowl-empty','1':'lone-stalk','2':'paired-whiskers','3':'tripod-tabby',
+            '4':'perfect-landfall','5':'keen-senses','6':'poly-toes','7':'sunrise-groom',
+            '8':'midnight-zoom','9':'final-life'
+        };
+        const felinaSpecial = {
+            ' ':'tail-swish','!':'scruff-grab','?':'tilt-head','.':'paw-stamp',
+            ',':'slow-blink',';':'half-blink',':':'tail-twitch','-':'arch-back',
+            '_':'floor-sleep','+':'extra-treat','=':'balanced-pounce','*':'star-pattern',
+            '/':'fence-leap','\\':'slip-under','(':'curl-up',')':'uncurl',
+            '[':'hide-box-open',']':'hide-box-close','{':'paw-reach','}':'paw-retract',
+            '@':'collar-tag','#':'scratch-post','&':'bonded-pair','%':'partial-purr',
+            '"':'double-meow',"'":'claw-scratch','|':'tail-straight-up','~':'belly-up',
+            '^':'perched-high','<':'stalk-low','>':'pounce-high','€':'premium-tuna','$':'treat-jar',
+            '•':'bullet-mark'
+        };
+
+        // Emoji map for emoji mode — expanded with missing entries
+        const emojiMap = {
+            'a':'😸','b':'😻','c':'🐱','d':'🐾','e':'👂','f':'🧶','g':'😾','h':'😼',
+            'i':'🏠','j':'🤸','k':'😺','l':'👅','m':'📣','n':'💤','o':'🟠','p':'🎾',
+            'q':'🤫','r':'蹭','s':'😴','t':'🪀','u':'🛏️','v':'🧤','w':'〰️','x':'📦',
+            'y':'📢','z':'😴',
+            'ä':'🍂','ö':'😮','ü':'🤸','ß':'🐈‍⬛',
+            'é':'🇫🇷','è':'🔽','ê':'🏠','à':'⬇️','ç':'🌀','ñ':'🌐',
+            'ì':'🇮🇹','ò':'😲','å':'❄️','æ':'👥','ø':'⭕',
+            'ł':'🇵🇱','ś':'💫','ż':'✨','č':'🇨🇿','ř':'🔄','ě':'💃',
+            'ő':'🇭🇺','ű':'🦘','ã':'🇵🇹',
+            '0':'🥣','1':'1️⃣','2':'2️⃣','3':'3️⃣','4':'4️⃣','5':'5️⃣',
+            '6':'6️⃣','7':'7️⃣','8':'8️⃣','9':'9️⃣',
+            ' ':'💨','!':'😬','?':'🤔','.':'👣',',':'🙈',';':'😑',':':'👀','-':'🌀',
+            '_':'🧊','+':'🐟','=':'⚖️','*':'⭐','/':'🚧','\\':'🕳️',
+            '(':'🥚',')':'🐣','[':'📦','{':'🤲','@':'🏷️','#':'📌','&':'💞','%':'📊',
+            '"':'💬',"'":'💅','|':'📏','~':'🤰','^':'🪜','<':'🏃','>':'🎯',
+            '€':'🐟','$':'🍬','•':'⚫'
+        };
+
+        const baseMaps = { ...felinaLetters, ...felinaUmlauts, ...felinaIntl, ...felinaNumbers, ...felinaSpecial };
+        let workingMaps = { ...baseMaps };
+        let customOverrides = {};
+        let reverseMapCache = null;
+        let reverseMapDirty = true;
+
+        function rebuildReverseMaps() {
+            const rev = {};
+            Object.entries(workingMaps).forEach(([k, v]) => {
+                rev[v] = k;
+                if (k.match(/[a-zäöüßéèêàçñìòåæøłśżčřěőűã]/)) {
+                    rev['big-' + v] = k.toUpperCase();
+                }
+            });
+            return rev;
+        }
+
+        function getReverseMaps() {
+            if (reverseMapDirty || !reverseMapCache) {
+                reverseMapCache = rebuildReverseMaps();
+                reverseMapDirty = false;
+            }
+            return reverseMapCache;
+        }
+
+        function markReverseMapDirty() {
+            reverseMapDirty = true;
+        }
+
+        // ===== SECRET KEY =====
+        function getKeyShift(key) {
+            if (!key || key.length === 0) return 0;
+            let s = 0; for (let c of key) s += c.charCodeAt(0);
+            return s;
+        }
+        function applyShift(code, shift) {
+            if (!shift) return code;
+            const codes = Object.values(workingMaps).sort();
+            let idx = codes.indexOf(code);
+            if (idx === -1) return code;
+            idx = ((idx + shift) % codes.length + codes.length) % codes.length;
+            return codes[idx];
+        }
+        function reverseShift(code, shift) {
+            if (!shift) return code;
+            const codes = Object.values(workingMaps).sort();
+            let idx = codes.indexOf(code);
+            if (idx === -1) return code;
+            idx = ((idx - shift) % codes.length + codes.length) % codes.length;
+            return codes[idx];
+        }
+
+        // ===== PASSWORD STRENGTH =====
+        function updateStrength() {
+            const key = document.getElementById('secretKey').value;
+            const fill = document.getElementById('strengthFill');
+            if (!key) { fill.style.width = '0%'; fill.style.background = 'var(--border)'; return; }
+            let score = 0;
+            if (key.length >= 4) score++;
+            if (key.length >= 8) score++;
+            if (key.length >= 12) score++;
+            if (/[A-Z]/.test(key) && /[a-z]/.test(key)) score++;
+            if (/[0-9]/.test(key)) score++;
+            if (/[^A-Za-z0-9]/.test(key)) score++;
+            const pct = Math.min(100, score * 17);
+            const colors = ['#ff6b6b','#ff9800','#f9a825','#cddc39','#43e97b','#43e97b'];
+            fill.style.width = pct + '%';
+            fill.style.background = colors[Math.min(score, 5)];
+        }
+
+        // ===== DEBOUNCED LIVE PREVIEW =====
+        let inputDebounceTimer = null;
+        function onInputChange() {
+            updateCounter();
+            if (inputDebounceTimer) clearTimeout(inputDebounceTimer);
+            inputDebounceTimer = setTimeout(() => handleLivePreview(), 200);
+        }
+
+        // ===== ENCRYPT (with multi-layer) =====
+        function encrypt() {
+            const input = document.getElementById('inputText').value;
+            const preserveCase = document.getElementById('preserveCase').checked;
+            const emojiMode = document.getElementById('emojiMode').checked;
+            const sep = document.getElementById('separatorSelect').value;
+            const keyShift = getKeyShift(document.getElementById('secretKey').value);
+            const layers = parseInt(document.getElementById('layerCount').value) || 1;
+            let current = input;
+            let freq = {};
+            showLayerAnimation(layers);
+
+            for (let layer = 0; layer < layers; layer++) {
+                let parts = [];
+                for (let char of current) {
+                    const lower = char.toLowerCase();
+                    if (workingMaps[lower]) {
+                        let code = workingMaps[lower];
+                        if (emojiMode && emojiMap[lower]) {
+                            code = emojiMap[lower];
+                        } else {
+                            if (preserveCase && char !== lower && lower.match(/[a-zäöüßéèêàçñìòåæøłśżčřěőűã]/)) {
+                                code = 'big-' + code;
+                            }
+                            if (keyShift > 0) {
+                                const base = code.replace(/^big-/, '');
+                                const shifted = applyShift(base, keyShift);
+                                code = code.startsWith('big-') ? 'big-' + shifted : shifted;
+                            }
+                        }
+                        parts.push(code);
+                        freq[code] = (freq[code] || 0) + 1;
+                    } else {
+                        parts.push(`{${char}}`);
+                    }
+                }
+                current = parts.join(emojiMode ? '' : sep);
+            }
+
+            let html = `<strong>🔒 Verschlüsselt${layers>1?` (${layers} Layer)`:''}${keyShift?' (🔑)':''}${emojiMode?' (🐱)':''}:</strong><br>${escapeHtml(current)}`;
+            setOutput(html, current, current.split(sep).length, freq);
+            saveHistory(input, current, 'encrypt');
+            saveSettings();
+            if (document.getElementById('soundEnabled').checked) playMeow();
+        }
+
+        // ===== DECRYPT (with multi-layer — FIXED: reversed order) =====
+        function decrypt() {
+            const input = document.getElementById('inputText').value.trim();
+            const sep = document.getElementById('separatorSelect').value;
+            const keyShift = getKeyShift(document.getElementById('secretKey').value);
+            const layers = parseInt(document.getElementById('layerCount').value) || 1;
+            let current = input;
+            showLayerAnimation(layers);
+
+            // FIX: Build reverse map ONCE, not per-layer
+            const allReverse = getReverseMaps();
+
+            // FIX: Decrypt in REVERSE order (last encrypted layer first)
+            for (let layer = layers - 1; layer >= 0; layer--) {
+                // FIX: Use exact string split instead of fragile regex
+                let parts = splitBySeparator(current, sep);
+                let decrypted = '';
+
+                for (let part of parts) {
+                    if (!part) continue;
+                    const braceMatch = part.match(/^\{(.+)\}$/);
+                    if (braceMatch) { decrypted += braceMatch[1]; continue; }
+                    let lookup = part.replace(/[{}]/g, '');
+                    if (keyShift > 0) {
+                        const base = lookup.replace(/^big-/, '');
+                        const unshifted = reverseShift(base, keyShift);
+                        lookup = lookup.startsWith('big-') ? 'big-' + unshifted : unshifted;
+                    }
+                    if (allReverse[lookup]) {
+                        decrypted += allReverse[lookup];
+                    } else {
+                        // Try without key shift as fallback
+                        if (keyShift > 0 && allReverse[part.replace(/[{}]/g, '')]) {
+                            decrypted += allReverse[part.replace(/[{}]/g, '')];
+                        }
+                    }
+                }
+                current = decrypted;
+            }
+
+            let html = `<strong>🔓 Entschlüsselt${layers>1?` (${layers} Layer)`:''}${keyShift?' (🔑)':''}:</strong><br>${escapeHtml(current)}`;
+            setOutput(html, current, 0, {});
+            saveHistory(input, current, 'decrypt');
+            if (document.getElementById('soundEnabled').checked) playMeow();
+        }
+
+        // FIX: Exact separator splitting — no regex fragility
+        function splitBySeparator(text, sep) {
+            if (!sep || sep.trim() === '') {
+                return text.split(/\s+/).filter(p => p.length > 0);
+            }
+            const parts = [];
+            let remaining = text;
+            while (remaining.length > 0) {
+                let idx = remaining.indexOf(sep);
+                if (idx === -1) {
+                    parts.push(remaining.trim());
+                    break;
+                }
+                parts.push(remaining.substring(0, idx).trim());
+                remaining = remaining.substring(idx + sep.length);
+            }
+            return parts.filter(p => p.length > 0);
+        }
+
+        // ===== LAYER ANIMATION =====
+        function showLayerAnimation(layers) {
+            const ind = document.getElementById('layerIndicator');
+            ind.innerHTML = '';
+            for (let i = 0; i < layers; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'layer-dot';
+                dot.textContent = i + 1;
+                ind.appendChild(dot);
+            }
+            const dots = ind.querySelectorAll('.layer-dot');
+            dots.forEach((dot, i) => {
+                setTimeout(() => {
+                    dots.forEach(d => d.classList.remove('active'));
+                    dot.classList.add('active');
+                    if (i === layers - 1) setTimeout(() => dots.forEach(d => d.classList.add('active')), 300);
+                }, i * 200);
+            });
+        }
+
+        // ===== OUTPUT =====
+        let lastOutputHTML = '';
+        let lastOutputPlain = '';
+        function setOutput(html, plainText, count, freq) {
+            lastOutputHTML = html;
+            lastOutputPlain = plainText;
+            const box = document.getElementById('outputBox');
+            box.innerHTML = html;
+            box.style.animation = 'none'; box.offsetHeight;
+            box.style.animation = 'fadeIn 0.3s ease';
+            document.getElementById('statsBar').innerHTML = `
+                <span class="stat-item">📦 ${count} Tokens</span>
+                <span class="stat-item">📏 ${plainText.length} Zeichen</span>
+                <span class="stat-item">🕐 ${new Date().toLocaleTimeString('de-DE')}</span>
+                <span class="stat-item">📊 ${Object.keys(freq).length} unique</span>
+            `;
+            renderFreqChart(freq);
+        }
+        function renderFreqChart(freq) {
+            const chart = document.getElementById('freqChart');
+            const sorted = Object.entries(freq).sort((a,b) => b[1]-a[1]).slice(0, 15);
+            if (!sorted.length) { chart.innerHTML = ''; return; }
+            const max = sorted[0][1];
+            chart.innerHTML = sorted.map(([code, count]) => {
+                const h = Math.max(8, (count / max) * 60);
+                return `<div class="freq-bar-wrapper">
+                    <span style="font-size:10px;font-weight:bold;color:var(--accent);">${count}×</span>
+                    <div class="freq-bar" style="height:${h}px;"></div>
+                    <span class="freq-label" title="${escapeHtml(code)}">${escapeHtml(code).replace(/^big-/,'B:')}</span>
+                </div>`;
+            }).join('');
+        }
+
+        // ===== LIVE PREVIEW =====
+        function handleLivePreview() {
+            if (!document.getElementById('livePreview').checked) return;
+            const input = document.getElementById('inputText').value.trim();
+            if (!input) {
+                document.getElementById('outputBox').innerHTML = i18n[currentLang].result_placeholder;
+                document.getElementById('statsBar').innerHTML = '';
+                document.getElementById('freqChart').innerHTML = '';
+                document.getElementById('layerIndicator').innerHTML = '';
+                lastOutputHTML = ''; lastOutputPlain = ''; return;
+            }
+            const looksLikeCode = /^(purr|whisker|cat|paw|ear|fur|growl|hiss|indoor|jump|kitty|lick|meow|nap|orange|play|quiet|rub|sleep|toy|under|velvet|wag|xray|yowl|zzz|big-|tail-swish|bowl-empty|lone-stalk|paired|tripod|perfect|keen|poly|sunrise|midnight|final|autumn|open-mouth|overstretch|sharp|french|low-purr|roof|paw-down|curled|tilde|italian|surprise|nordic|northern|polish|czech|hungarian|portuguese|scruff|tilt-head|paw-stamp|slow-blink|tail|arch|floor|extra|balanced|star|fence|slip|curl|uncurl|hide|paw-reach|paw-retract|collar|scratch|bonded|partial|double|claw|belly|perched|stalk-low|pounce-high|premium|treat|bullet)/i.test(input);
+            if (looksLikeCode) decrypt(); else encrypt();
+        }
+
+        // ===== SOUND =====
+        let audioCtx = null;
+        function toggleSound() {
+            if (document.getElementById('soundEnabled').checked && !audioCtx)
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            saveSettings();
+        }
+        function playMeow() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.exponentialRampToValueAtTime(900, now + 0.1);
+            osc.frequency.exponentialRampToValueAtTime(500, now + 0.3);
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+            osc.start(now); osc.stop(now + 0.4);
+        }
+
+        // ===== CUSTOM CODES =====
+        function addCustomCode() {
+            const char = document.getElementById('customChar').value.toLowerCase();
+            const code = document.getElementById('customCode').value.trim();
+            if (!char || !code) return;
+            // FIX: Validate that code doesn't contain the separator
+            const sep = document.getElementById('separatorSelect').value;
+            if (code.includes(sep.trim())) {
+                flashMessage('⚠️ Code darf nicht den Separator enthalten!', 'error');
+                return;
+            }
+            customOverrides[char] = code;
+            workingMaps[char] = code;
+            markReverseMapDirty();
+            document.getElementById('customChar').value = '';
+            document.getElementById('customCode').value = '';
+            renderCustomList();
+            handleLivePreview();
+            saveSettings();
+        }
+        function removeCustomCode(char) {
+            delete customOverrides[char];
+            workingMaps[char] = baseMaps[char] || workingMaps[char];
+            if (!baseMaps[char]) delete workingMaps[char];
+            markReverseMapDirty();
+            renderCustomList();
+            handleLivePreview();
+            saveSettings();
+        }
+        function resetCustomCodes() {
+            customOverrides = {};
+            workingMaps = { ...baseMaps };
+            markReverseMapDirty();
+            renderCustomList();
+            handleLivePreview();
+            saveSettings();
+        }
+        function renderCustomList() {
+            const list = document.getElementById('customList');
+            const entries = Object.entries(customOverrides);
+            if (!entries.length) { list.innerHTML = '<p style="color:var(--subtle);font-size:13px;">Keine eigenen Codes definiert.</p>'; return; }
+            list.innerHTML = entries.map(([char, code]) =>
+                `<div class="custom-item"><strong>${escapeHtml(char)}</strong> → <code>${escapeHtml(code)}</code> <button onclick="removeCustomCode('${char.replace(/'/g,"\\'")}')">✕</button></div>`
+            ).join('');
+        }
+
+        // ===== EXPORT / IMPORT CONFIG =====
+        function exportConfig() {
+            const config = {
+                version: '4.1',
+                customCodes: customOverrides,
+                settings: getSettings()
+            };
+            const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'felina-cipher-config.json';
+            a.click(); URL.revokeObjectURL(a.href);
+        }
+        function importConfig(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                try {
+                    const config = JSON.parse(ev.target.result);
+                    if (config.customCodes) {
+                        customOverrides = config.customCodes;
+                        Object.entries(customOverrides).forEach(([k,v]) => { workingMaps[k] = v; });
+                        markReverseMapDirty();
+                        renderCustomList();
+                    }
+                    if (config.settings) {
+                        applySettings(config.settings);
+                        handleLivePreview();
+                    }
+                    flashMessage('✅ Konfiguration importiert!', 'success');
+                } catch(e) {
+                    flashMessage('❌ Fehler beim Importieren: ungültiges JSON!', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // ===== SETTINGS PERSISTENCE =====
+        function getSettings() {
+            return {
+                separator: document.getElementById('separatorSelect').value,
+                preserveCase: document.getElementById('preserveCase').checked,
+                emojiMode: document.getElementById('emojiMode').checked,
+                layers: document.getElementById('layerCount').value,
+                livePreview: document.getElementById('livePreview').checked,
+                sound: document.getElementById('soundEnabled').checked,
+                lang: currentLang
+            };
+        }
+        function applySettings(s) {
+            if (s.separator) document.getElementById('separatorSelect').value = s.separator;
+            if (s.preserveCase !== undefined) document.getElementById('preserveCase').checked = s.preserveCase;
+            if (s.emojiMode !== undefined) document.getElementById('emojiMode').checked = s.emojiMode;
+            if (s.layers) document.getElementById('layerCount').value = s.layers;
+            if (s.livePreview !== undefined) document.getElementById('livePreview').checked = s.livePreview;
+            if (s.sound !== undefined) document.getElementById('soundEnabled').checked = s.sound;
+        }
+        function saveSettings() {
+            try {
+                localStorage.setItem('felinaSettings', JSON.stringify(getSettings()));
+                localStorage.setItem('felinaCustomCodes', JSON.stringify(customOverrides));
+            } catch(e) {}
+        }
+        function loadSettings() {
+            try {
+                const raw = localStorage.getItem('felinaSettings');
+                if (raw) applySettings(JSON.parse(raw));
+                const ccRaw = localStorage.getItem('felinaCustomCodes');
+                if (ccRaw) {
+                    customOverrides = JSON.parse(ccRaw);
+                    Object.entries(customOverrides).forEach(([k,v]) => { workingMaps[k] = v; });
+                    markReverseMapDirty();
+                }
+            } catch(e) {}
+        }
+
+        // ===== CHALLENGE MODE =====
+        let challengeData = null;
+        let challengeStats = { score: 0, solved: 0, fails: 0 };
+
+        function newChallenge() {
+            const words = ['katze','kitten','miau','pfote','schwanz','schnurren','maus','milch','kralle','fell',
+                          'ohren','augen','zunge','schlaf','jagd','karte','baum','wolle','spiel','leckerli',
+                          'henry','lumo','garten','fenster','kissen'];
+            const word = words[Math.floor(Math.random() * words.length)];
+            const numWords = Math.floor(Math.random() * 3) + 1;
+            const chars = (word + ' ').repeat(numWords).trim();
+
+            let parts = [];
+            for (let char of chars) {
+                const lower = char.toLowerCase();
+                if (baseMaps[lower]) {
+                    parts.push(baseMaps[lower]);
+                } else {
+                    parts.push(`{${char}}`);
+                }
+            }
+            const encrypted = parts.join(' • ');
+            challengeData = { original: chars, encrypted: encrypted };
+            document.getElementById('challengeCode').textContent = encrypted;
+            document.getElementById('challengeAnswer').value = '';
+            document.getElementById('challengeFeedback').innerHTML = '';
+        }
+        function checkChallenge() {
+            if (!challengeData) { newChallenge(); return; }
+            const answer = document.getElementById('challengeAnswer').value.trim().toLowerCase();
+            const correct = challengeData.original.toLowerCase();
+            const fb = document.getElementById('challengeFeedback');
+            if (answer === correct) {
+                challengeStats.score += 10;
+                challengeStats.solved++;
+                fb.innerHTML = `<span class="success-text">✅ Richtig! +10 Punkte 🎉</span>`;
+                playMeow();
+                setTimeout(() => newChallenge(), 2000);
+            } else {
+                challengeStats.fails++;
+                fb.innerHTML = `<span class="error-text">❌ Falsch! Versuche es nochmal.</span>`;
+            }
+            document.getElementById('challengeScore').textContent = challengeStats.score;
+            document.getElementById('challengeSolved').textContent = challengeStats.solved;
+            document.getElementById('challengeFails').textContent = challengeStats.fails;
+        }
+        function revealChallenge() {
+            if (!challengeData) return;
+            document.getElementById('challengeFeedback').innerHTML =
+                `<span class="warning-text">👁️ Lösung: <code>${escapeHtml(challengeData.original)}</code></span>`;
+        }
+
+        // ===== QR CODE =====
+        function showQR() {
+            let text = lastOutputPlain || '';
+            if (!text || text.includes('Das Ergebnis erscheint') || text.includes('Results will appear')) {
+                flashMessage('⚠️ Kein Text für QR-Code!', 'error'); return;
+            }
+
+            const modal = document.getElementById('qrModal');
+            const img = document.getElementById('qrImage');
+            const loading = document.getElementById('qrLoading');
+            const textEl = document.getElementById('qrText');
+
+            img.style.display = 'none';
+            loading.style.display = 'block';
+            loading.textContent = '⏳ Generiere QR-Code...';
+            textEl.textContent = text.substring(0, 100) + (text.length > 100 ? '...' : '');
+
+            // FIX: Use encodeURIComponent for safe URL encoding
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(text)}`;
+            img.onload = () => {
+                img.style.display = 'block';
+                loading.style.display = 'none';
+            };
+            img.onerror = () => {
+                loading.textContent = '⚠️ QR-Code konnte nicht generiert werden!';
+            };
+            img.src = qrUrl;
+            modal.classList.add('active');
+        }
+        function closeQR(e) {
+            if (e && e.target !== e.currentTarget) return;
+            document.getElementById('qrModal').classList.remove('active');
+        }
+        function downloadQR() {
+            const img = document.getElementById('qrImage');
+            if (!img.src) return;
+            const a = document.createElement('a');
+            a.href = img.src;
+            a.download = 'felina-cipher-qr.png';
+            a.click();
+        }
+
+        // ===== HISTORY =====
+        function saveHistory(input, output, type) {
+            let hist = JSON.parse(localStorage.getItem('felinaHistory') || '[]');
+            hist.unshift({ input: input.substring(0, 80), output: output.substring(0, 80), type, time: new Date().toLocaleTimeString('de-DE') });
+            hist = hist.slice(0, 10);
+            localStorage.setItem('felinaHistory', JSON.stringify(hist));
+            renderHistory();
+        }
+        function renderHistory() {
+            const list = document.getElementById('historyList');
+            const hist = JSON.parse(localStorage.getItem('felinaHistory') || '[]');
+            if (!hist.length) { list.innerHTML = '<div class="history-empty">🐾 Noch keine Konvertierungen!</div>'; return; }
+            list.innerHTML = hist.map((h, i) => `
+                <div class="history-item" onclick="loadHistoryItem(${i})">
+                    <div>
+                        <div class="history-text"><strong>${h.type === 'encrypt' ? '🔒' : '🔓'}</strong> ${escapeHtml(h.output)}</div>
+                        <div class="history-meta">${h.time} · ${h.type === 'encrypt' ? 'Verschlüsselt' : 'Entschlüsselt'}</div>
+                    </div>
+                    <button class="history-delete" onclick="event.stopPropagation(); deleteHistoryItem(${i})">✕</button>
+                </div>
+            `).join('');
+        }
+        // FIX: No longer depends on global `event` — finds the tab element directly
+        function loadHistoryItem(i) {
+            const hist = JSON.parse(localStorage.getItem('felinaHistory') || '[]');
+            if (!hist[i]) return;
+            document.getElementById('inputText').value = hist[i].input;
+            updateCounter();
+            // Switch to main tab without relying on event
+            const mainTab = document.querySelector('.tab[data-i18n="tab_cipher"], .tab');
+            if (mainTab) switchTab(null, 'main');
+            handleLivePreview();
+        }
+        function deleteHistoryItem(i) {
+            let hist = JSON.parse(localStorage.getItem('felinaHistory') || '[]');
+            hist.splice(i, 1);
+            localStorage.setItem('felinaHistory', JSON.stringify(hist));
+            renderHistory();
+        }
+        function clearHistory() {
+            localStorage.removeItem('felinaHistory');
+            renderHistory();
+        }
+
+        // ===== BUTTON ACTIONS =====
+        function copyResult() {
+            let text = lastOutputPlain || '';
+            if (!text || text.includes('Das Ergebnis erscheint') || text.includes('Results will appear')) {
+                flashMessage('⚠️ Nichts zum Kopieren!', 'error'); return;
+            }
+            navigator.clipboard.writeText(text).then(() => flashMessage('📋 Kopiert!', 'success'))
+                .catch(() => {
+                    const ta = document.createElement('textarea'); ta.value = text;
+                    document.body.appendChild(ta); ta.select();
+                    document.execCommand('copy'); document.body.removeChild(ta);
+                    flashMessage('📋 Kopiert!', 'success');
+                });
+        }
+        function swapToInput() {
+            let text = lastOutputPlain || '';
+            if (!text || text.includes('Das Ergebnis erscheint') || text.includes('Results will appear')) {
+                flashMessage('⚠️ Kein Ergebnis!', 'error'); return;
+            }
+            document.getElementById('inputText').value = text;
+            updateCounter(); handleLivePreview();
+            flashMessage('🔄 Übertragen!', 'success');
+        }
+        function downloadResult() {
+            let text = lastOutputPlain || '';
+            if (!text || text.includes('Das Ergebnis erscheint') || text.includes('Results will appear')) {
+                flashMessage('⚠️ Nichts zum Download!', 'error'); return;
+            }
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'felina-cipher-v4.txt';
+            a.click(); URL.revokeObjectURL(a.href);
+            flashMessage('💾 Heruntergeladen!', 'success');
+        }
+        function shareURL() {
+            const input = document.getElementById('inputText').value;
+            if (!input) { flashMessage('⚠️ Leere Eingabe!', 'error'); return; }
+            // FIX: Safe UTF-8 base64 encoding
+            const encoded = btoa(String.fromCharCode(...new TextEncoder().encode(input)));
+            const url = `${location.origin}${location.pathname}#f=${encoded}`;
+            navigator.clipboard.writeText(url).then(() => flashMessage('🔗 Link kopiert!', 'success'))
+                .catch(() => { console.log(url); flashMessage('🔗 Siehe Konsole!', 'success'); });
+        }
+        function flashMessage(msg, type) {
+            const box = document.getElementById('outputBox');
+            box.innerHTML = `<span class="${type === 'success' ? 'success-text' : 'error-text'}">${msg}</span>`;
+            setTimeout(() => { if (lastOutputHTML) box.innerHTML = lastOutputHTML; else handleLivePreview(); }, 1500);
+        }
+        function clearAll() {
+            document.getElementById('inputText').value = '';
+            document.getElementById('outputBox').innerHTML = i18n[currentLang].result_placeholder;
+            document.getElementById('statsBar').innerHTML = '';
+            document.getElementById('freqChart').innerHTML = '';
+            document.getElementById('layerIndicator').innerHTML = '';
+            document.getElementById('secretKey').value = '';
+            document.getElementById('strengthFill').style.width = '0%';
+            lastOutputHTML = '';
+            lastOutputPlain = '';
+            updateCounter();
+            document.getElementById('inputText').focus();
+        }
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.getElementById('themeBtn');
+            if (body.getAttribute('data-theme') === 'dark') {
+                body.removeAttribute('data-theme'); btn.textContent = '🌙';
+                localStorage.setItem('felinaTheme', 'light');
+            } else {
+                body.setAttribute('data-theme', 'dark'); btn.textContent = '☀️';
+                localStorage.setItem('felinaTheme', 'dark');
+            }
+        }
+
+        // ===== TABS =====
+        // FIX: Handle null evt gracefully
+        function switchTab(evt, name) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            if (evt && evt.target) {
+                evt.target.classList.add('active');
+            } else {
+                // Find the tab by data-i18n matching name or first tab
+                const tabs = document.querySelectorAll('.tab');
+                const tabMap = {'main':0,'custom':1,'challenge':2,'codex':3,'history':4,'about':5};
+                const idx = tabMap[name];
+                if (idx !== undefined && tabs[idx]) tabs[idx].classList.add('active');
+            }
+            document.getElementById('tab-' + name).classList.add('active');
+            if (name === 'history') renderHistory();
+            if (name === 'custom') renderCustomList();
+        }
+
+        // ===== TABLE SEARCH =====
+        function filterTable() {
+            const q = document.getElementById('tableSearch').value.toLowerCase();
+            document.querySelectorAll('#letterTable tr, #numberTable tr').forEach(row => {
+                if (row.classList.contains('section-divider') || row.querySelector('th')) return;
+                row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+            });
+        }
+
+        // ===== DRAG & DROP =====
+        function setupDragDrop() {
+            const ta = document.getElementById('inputText');
+            ta.addEventListener('dragover', e => { e.preventDefault(); ta.classList.add('drag-over'); });
+            ta.addEventListener('dragleave', () => ta.classList.remove('drag-over'));
+            ta.addEventListener('drop', e => {
+                e.preventDefault(); ta.classList.remove('drag-over');
+                const file = e.dataTransfer.files[0];
+                if (file && file.name.endsWith('.txt')) {
+                    const reader = new FileReader();
+                    reader.onload = ev => {
+                        ta.value = ev.target.result;
+                        updateCounter(); handleLivePreview();
+                    };
+                    reader.readAsText(file);
+                    flashMessage('📁 Datei geladen!', 'success');
+                } else { flashMessage('⚠️ Nur .txt-Dateien!', 'error'); }
+            });
+        }
+
+        // ===== KEYBOARD SHORTCUTS =====
+        document.addEventListener('keydown', e => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    e.preventDefault();
+                    e.shiftKey ? decrypt() : encrypt();
+                }
+            } else {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    e.preventDefault();
+                    e.shiftKey ? decrypt() : encrypt();
+                }
+                if (e.ctrlKey && e.key.toLowerCase() === 'l') {
+                    e.preventDefault(); clearAll();
+                }
+                if (e.ctrlKey && e.key.toLowerCase() === 'q') {
+                    e.preventDefault(); showQR();
+                }
+            }
+        });
+
+        // ===== HELPER =====
+        function escapeHtml(s) {
+            const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
+        }
+        function updateCounter() {
+            document.getElementById('charCounter').textContent =
+                `${document.getElementById('inputText').value.length} Zeichen`;
+        }
+
+        // ===== BUILD TABLES =====
+        function buildTables() {
+            const lt = document.getElementById('letterTable');
+            lt.innerHTML = '<tr><th>Zeichen</th><th>Katzen-Code</th></tr>';
+
+            lt.innerHTML += '<tr class="section-divider"><td colspan="2">🇩🇪 Umlaute (Ä Ö Ü ß)</td></tr>';
+            Object.entries(felinaUmlauts).forEach(([k, v]) => {
+                lt.innerHTML += `<tr><td><strong>${k.toUpperCase()}</strong> / ${k}</td><td><code>${v}</code></td></tr>`;
+            });
+
+            lt.innerHTML += '<tr class="section-divider"><td colspan="2">🌍 International (FR ES IT NO PL CZ HU PT)</td></tr>';
+            Object.entries(felinaIntl).forEach(([k, v]) => {
+                lt.innerHTML += `<tr><td><strong>${k}</strong></td><td><code>${v}</code></td></tr>`;
+            });
+
+            lt.innerHTML += '<tr class="section-divider"><td colspan="2">📖 A–Z Standard</td></tr>';
+            Object.entries(felinaLetters).sort().forEach(([k, v]) => {
+                lt.innerHTML += `<tr><td><strong>${k.toUpperCase()}</strong> / ${k}</td><td><code>${v}</code></td></tr>`;
+            });
+
+            const nt = document.getElementById('numberTable');
+            nt.innerHTML = '<tr><th>Zeichen</th><th>Katzen-Code</th></tr>';
+
+            nt.innerHTML += '<tr class="section-divider"><td colspan="2">🔢 Zahlen (0–9)</td></tr>';
+            Object.entries(felinaNumbers).forEach(([k, v]) => {
+                nt.innerHTML += `<tr><td><strong>${k}</strong></td><td><code>${v}</code></td></tr>`;
+            });
+
+            nt.innerHTML += '<tr class="section-divider"><td colspan="2">✨ Sonderzeichen</td></tr>';
+            Object.entries(felinaSpecial).forEach(([k, v]) => {
+                const disp = k === ' ' ? '␣ (Leerz.)' : escapeHtml(k);
+                nt.innerHTML += `<tr><td><strong>${disp}</strong></td><td><code>${v}</code></td></tr>`;
+            });
+        }
+
+        // ===== URL HASH LOAD =====
+        function loadFromHash() {
+            const hash = location.hash;
+            if (hash.startsWith('#f=')) {
+                try {
+                    // FIX: Safe UTF-8 base64 decoding
+                    const b64 = hash.substring(3);
+                    const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+                    const decoded = new TextDecoder().decode(bytes);
+                    document.getElementById('inputText').value = decoded;
+                    updateCounter();
+                    handleLivePreview();
+                } catch (e) {
+                    console.warn('Failed to load from hash:', e);
+                }
+            }
+        }
+
+        // ===== THEME RESTORE =====
+        function restoreTheme() {
+            const saved = localStorage.getItem('felinaTheme');
+            if (saved === 'dark') {
+                document.body.setAttribute('data-theme', 'dark');
+                document.getElementById('themeBtn').textContent = '☀️';
+            }
+        }
+
+        // ===== INIT =====
+        window.onload = () => {
+            loadSettings();       // NEW: Restore persisted settings first
+            buildTables();
+            renderHistory();
+            renderCustomList();
+            setupDragDrop();
+            restoreTheme();
+            updateCounter();
+            loadFromHash();
+        };
+    </script>
+</body>
+</html>
