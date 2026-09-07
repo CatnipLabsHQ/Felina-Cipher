@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#6d4aff">
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'">
+    <link rel="manifest" href="manifest.json">
+    <title>Felianisch — Geheimsprache</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="nav">
+        <a href="#" class="nav-logo" data-page="tool">🐱 Felianisch</a>
+        <div class="nav-links">
+            <a href="#" data-page="tool" class="active" data-i18n="nav_tool">Werkzeug</a>
+            <a href="#" data-page="files" data-i18n="nav_files">Dateien</a>
+            <a href="#" data-page="about" data-i18n="nav_about">Über</a>
+            <span class="lang-row">
+                <button id="langDeBtn" class="lang-btn active" title="Deutsch">🇩🇪</button>
+                <button id="langEnBtn" class="lang-btn" title="English">🇬🇧</button>
+            </span>
+            <button id="lockBtn" class="theme-toggle" data-i18n-title="btn_lock_title">🔐</button>
+            <button id="themeToggle" class="theme-toggle" data-i18n-title="btn_theme_title">🌙</button>
+        </div>
+    </nav>
+
+    <!-- === PAGE: TOOL === -->
+    <main id="page-tool" class="page active">
+        <div class="key-bar">
+            <span class="key-label">🔑</span>
+            <select id="keySelect" class="key-select">
+                <option value="">— Schlüssel wählen —</option>
+            </select>
+            <span id="keyStrength" class="key-strength"></span>
+            <button id="manageKeysBtn" class="btn-small" data-i18n="manage">Verwalten</button>
+        </div>
+
+        <div class="mode-bar">
+            <button id="modeClassicBtn" class="mode-btn active" data-i18n="mode_classic">🎭 Klassisch</button>
+            <button id="modeSecureBtn" class="mode-btn" data-i18n="mode_secure">🛡️ Secure <span class="mode-sub" data-i18n="mode_secure_sub">(AES-256)</span></button>
+        </div>
+
+        <section class="panel">
+            <textarea id="inputText" data-i18n-ph="input_ph" placeholder="Text eingeben oder Felianisch einfügen…" autofocus></textarea>
+            <div class="controls">
+                <button id="encryptBtn" class="btn btn-primary" data-i18n="encrypt">🔒 Verschlüsseln</button>
+                <button id="decryptBtn" class="btn btn-secondary" data-i18n="decrypt">🔓 Entschlüsseln</button>
+                <button id="autoBtn" class="btn btn-auto" data-i18n="auto">✨ Auto</button>
+                <button id="clearBtn" class="btn btn-clear" title="Clear">✕</button>
+            </div>
+        </section>
+
+        <section class="panel output-panel">
+            <div class="output-header">
+                <span class="char-count" id="charCount">0 Zeichen</span>
+                <div class="output-actions">
+                    <button id="copyBtn" class="btn-tiny" data-i18n-title="btn_copy_title">📋</button>
+                    <button id="shareBtn" class="btn-tiny" data-i18n-title="btn_share_title">🔗</button>
+                    <select id="expirySelect" class="expiry-select" data-i18n-title="btn_expiry_title">
+                        <option value="" data-i18n="exp_none">♾️ ohne Ablauf</option>
+                        <option value="3600" data-i18n="exp_1h">1 Stunde</option>
+                        <option value="86400" data-i18n="exp_24h">24 Stunden</option>
+                        <option value="604800" data-i18n="exp_7d">7 Tage</option>
+                    </select>
+                    <button id="swapBtn" class="btn-tiny" data-i18n-title="btn_swap_title">↕</button>
+                </div>
+            </div>
+            <div id="result" class="output-box">
+                <span class="placeholder" data-i18n="output_ph">Ausgabe erscheint hier…</span>
+            </div>
+            <div id="modeHint" class="mode-hint hidden"></div>
+        </section>
+
+        <section class="panel history-panel">
+            <details>
+                <summary><span data-i18n="history_title">📜 Verlauf</span> <span class="badge" id="historyCount"></span></summary>
+                <div id="historyList" class="history-list"></div>
+                <button id="clearHistoryBtn" class="btn-small danger" style="margin-top:0.5rem;" data-i18n="clear_history">Verlauf löschen</button>
+            </details>
+        </section>
+
+        <section class="panel">
+            <details>
+                <summary><span data-i18n="alpha_title">📖 Alphabet-Referenz</span> <span class="badge" id="charsetCount"></span></summary>
+                <p class="hint" data-i18n="hint_classic">Klassisch: 4 Nonce-Symbole + Nutzlast + ⟑ + 2 Prüfsummen-Symbole.</p>
+                <p class="hint" data-i18n="hint_secure">Secure: ⟐ + Base-66-kodierte Salt/IV/Chiffrentext-Daten (AES-256-GCM).</p>
+                <table id="alphabetTable"></table>
+            </details>
+        </section>
+    </main>
+
+    <!-- === PAGE: FILES === -->
+    <main id="page-files" class="page">
+        <h2 class="page-title" data-i18n="files_title">📁 Datei-Verschlüsselung</h2>
+        <p class="hint" style="margin-bottom:1rem;" data-i18n="files_desc">Textdateien (.txt, .md, .fel) hier ablegen oder auswählen. Verschlüsseln → Download als .fel-Datei. Entschlüsseln genauso zurück.</p>
+
+        <div class="key-bar">
+            <span class="key-label">🔑</span>
+            <select id="fileKeySelect" class="key-select">
+                <option value="">— Schlüssel wählen —</option>
+            </select>
+            <span id="fileKeyStrength" class="key-strength"></span>
+        </div>
+
+        <div class="mode-bar">
+            <button id="fileModeClassicBtn" class="mode-btn active" data-i18n="mode_classic">🎭 Klassisch</button>
+            <button id="fileModeSecureBtn" class="mode-btn" data-i18n="mode_secure">🛡️ Secure <span class="mode-sub" data-i18n="mode_secure_sub">(AES-256)</span></button>
+        </div>
+
+        <div id="dropZone" class="drop-zone">
+            <div class="drop-icon">📄</div>
+            <p><strong data-i18n="drop_main">Datei hier ablegen oder klicken zum Auswählen</strong></p>
+            <p class="hint" data-i18n="drop_sub">Max. ~1 MB, Text-Formate</p>
+            <input type="file" id="fileInput" accept=".txt,.md,.fel,text/plain" class="hidden">
+        </div>
+
+        <div id="fileProgress" class="file-progress hidden">
+            <div class="file-info" id="fileInfo"></div>
+            <div class="file-actions">
+                <button id="fileEncryptBtn" class="btn btn-primary" data-i18n="file_enc">🔒 Verschlüsseln &amp; Speichern</button>
+                <button id="fileDecryptBtn" class="btn btn-secondary" data-i18n="file_dec">🔓 Entschlüsseln &amp; Speichern</button>
+            </div>
+            <pre id="filePreview" class="file-preview"></pre>
+        </div>
+
+        <div id="fileResult" class="output-box" style="margin-top:1rem;">
+            <span class="placeholder" data-i18n="file_result_ph">Noch keine Datei geladen.</span>
+        </div>
+    </main>
+
+    <!-- === PAGE: ABOUT === -->
+    <main id="page-about" class="page">
+        <article class="about">
+            <div id="aboutContent"></div>
+
+            <!-- Easter Egg: das goldene Medaillon -->
+            <div class="medallion-row">
+                <span id="medallion" class="medallion" title="…?">🏅</span>
+                <span class="medallion-caption hint" id="medallionCaption"></span>
+            </div>
+        </article>
+    </main>
+
+    <!-- === LOCK OVERLAY === -->
+    <div id="lockOverlay" class="modal-overlay">
+        <div class="modal">
+            <h2 id="lockTitle">🔐 Entsperren</h2>
+            <p class="hint" id="lockDesc">Gib dein Master-Passwort ein, um deine Schlüssel zu laden.</p>
+
+            <div class="modal-section">
+                <input type="password" id="masterPassInput" data-i18n-ph="master_ph" placeholder="Master-Passwort" class="input-field" autocomplete="current-password">
+                <input type="password" id="masterPassConfirm" data-i18n-ph="repeat_ph" placeholder="Wiederholen" class="input-field hidden" autocomplete="new-password">
+                <button id="lockSubmitBtn" class="btn btn-primary" data-i18n="btn_unlock">Entsperren</button>
+                <button id="lockResetBtn" class="btn-small danger lock-reset-btn hidden" data-i18n="forgot">Passwort vergessen? Vault zurücksetzen</button>
+                <label class="hint" style="display:flex;gap:0.4rem;align-items:center;margin-top:0.5rem;">
+                    <input type="checkbox" id="showPassChk"> <span data-i18n="show_pass">Passwort anzeigen</span>
+                </label>
+            </div>
+
+            <p class="hint danger-text" id="lockWarn"></p>
+        </div>
+    </div>
+
+    <!-- === KEY MANAGER MODAL === -->
+    <div id="keyModal" class="modal-overlay hidden">
+        <div class="modal">
+            <h2 data-i18n="km_title">🗝️ Schlüssel</h2>
+
+            <div class="modal-section">
+                <input type="text" id="newKeyName" data-i18n-ph="km_name_ph" placeholder="Name (z.B. 'Freunde')" class="input-field">
+                <input type="text" id="newKeyValue" data-i18n-ph="km_val_ph" placeholder="Geheimcode" class="input-field">
+                <div class="modal-btn-row">
+                    <button id="saveKeyBtn" class="btn btn-primary" data-i18n="km_save">💾 Speichern</button>
+                    <button id="genKeyBtn" class="btn btn-secondary" data-i18n="km_rand">🎲 Zufällig</button>
+                    <button id="genSecureKeyBtn" class="btn btn-secondary" data-i18n="km_strong">🔐 Stark</button>
+                </div>
+            </div>
+
+            <ul id="keyList" class="key-list"></ul>
+
+            <div class="modal-footer">
+                <button id="exportKeysBtn" class="btn-small" data-i18n="km_export">📤 Export</button>
+                <button id="importKeysBtn" class="btn-small" data-i18n="km_import">📥 Import</button>
+                <input type="file" id="importFile" accept=".json" class="hidden">
+                <button id="closeKeyModalBtn" class="btn-small danger" data-i18n="km_close">Schließen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- === EASTER EGG OVERLAY === -->
+    <div id="eggOverlay" class="modal-overlay hidden">
+        <div class="modal egg-modal">
+            <h2 id="eggTitle">✨ …</h2>
+            <div id="eggText" class="egg-text"></div>
+            <button id="eggCloseBtn" class="btn btn-primary" style="width:100%;margin-top:1rem;">Okay 🐱</button>
+        </div>
+    </div>
+
+    <!-- === TOAST === -->
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="felian-alphabet.js"></script>
+    <script src="crypto.js"></script>
+    <script src="keymanager.js"></script>
+    <script src="i18n.js"></script>
+    <script src="ui.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
